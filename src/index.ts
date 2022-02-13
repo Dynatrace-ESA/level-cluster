@@ -175,19 +175,19 @@ export class SharedSessionStore<T = unknown>{
 
 export class SessionStoreClient<T = unknown> {
 
-    constructor(private port: number = 6801) {}
+    constructor(private port: number = 6801, private instanceId = "default") {}
 
     public get(key: string): Promise<T> {
-        return this.request("default", key, "get");
+        return this.request(this.instanceId, key, "get");
     }
     public put(key: string, value: T): Promise<boolean> {
-        return this.request("default", key, "put", value);
+        return this.request(this.instanceId, key, "put", value);
     }
     public delete(key: string): Promise<boolean> {
-        return this.request("default", key, "del");
+        return this.request(this.instanceId, key, "del");
     }
     public batch(entries: Array<{type: "put" | "del" | "get", key: string, value: T}>): Promise<unknown> {
-        return this.request("default", null, "batch", entries);
+        return this.request(this.instanceId, null, "batch", entries);
     }
 
     private async request(storeId: string, key: string, action: string, value?: any): Promise<any> {
