@@ -5,7 +5,10 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "target": "es6",
-    "rootDir": "./src/",
+    "rootDirs": [
+      "src",
+      "test",
+    ],
     "outDir": "./dist/",
     "strict": false
   }

@@ -1,4 +1,4 @@
-import { SharedSessionStore } from "../src/tcp";;
+import { SharedSessionStore } from "../src";;
 
 // Create a shared memory session store.
 new SharedSessionStore();

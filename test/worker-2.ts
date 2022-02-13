@@ -1,4 +1,4 @@
-import { SessionStoreClient } from "../src/tcp";
+import { SessionStoreClient } from "../src";
 
 
 (async() => {
