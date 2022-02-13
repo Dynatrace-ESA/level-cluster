@@ -2,7 +2,7 @@
   "name": "@dt-esa/level-cluster",
   "version": "1.0.1",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "tsc": "tsc",
