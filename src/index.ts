@@ -25,6 +25,9 @@ interface dbStore<T> {
     [key: string]: LevelDB<string, levelEntry<T>> | MemoryLevel<string, levelEntry<T>>
 }
 
+/**
+ * Run on "primary"
+ */
 export class SharedSessionStore<T = unknown>{
 
     private app: express; // application for storing the shared sessions.
@@ -94,7 +97,7 @@ export class SharedSessionStore<T = unknown>{
                 value: value
             } as levelEntry<T>;
 
-            console.log(storeVal);
+            // console.log(storeVal);
 
             // TBD batch
             console.log(`db[${action}](${key || value}, ${key ? storeVal : null})`);
@@ -112,14 +115,14 @@ export class SharedSessionStore<T = unknown>{
                 // response.
 
                 // Return data or 'true' if the action was successful.
-                console.log("Sending response", data);
+                // console.log("Sending response", data);
                 res.send({ 
                     value: data ? data.value : true
                 });
             }).catch(err => {
 
                 // Missing data in store. We return `undefined`.
-                if (err.code == "LEVEL_NOT_FOUND")
+                if (err.code == "LEVEL_NOT_FOUND" || err.type == "NotFoundError")
                     return res.send(undefined);
 
                 // If there is some other error -- pass it back to the client.
@@ -173,23 +176,62 @@ export class SharedSessionStore<T = unknown>{
     }
 }
 
+/**
+ * Run in worker instances
+ */
 export class SessionStoreClient<T = unknown> {
 
+    /**
+     * Create a new Session Store Client instance.
+     * @param port Port of Level cluster to listen on
+     * @param instanceId Instance ID for this client. If you have multiple instances that you need to interface, create multiple client objects.
+     */
     constructor(private port: number = 6801, private instanceId = "default") {}
 
+    /**
+     * Get an item from the store
+     * @param key Key to look for item at
+     * @returns stored item OR `undefined`. Getting a response of `undefined` means that there was no value for the given key.
+     * 
+     */
     public get(key: string): Promise<T> {
         return this.request(this.instanceId, key, "get");
     }
+    /**
+     * Put an item into the store.
+     * @param key   Key to store value at.
+     * @param value Value to store at key.
+     * @returns true/false. Returns true if operation was successful.
+     */
     public put(key: string, value: T): Promise<boolean> {
         return this.request(this.instanceId, key, "put", value);
     }
+    /**
+     * Delete an item from the store.
+     * @param key Key of item to delete
+     * @returns true/false. Returns true if operation was successful.
+     */
     public delete(key: string): Promise<boolean> {
         return this.request(this.instanceId, key, "del");
     }
+    /**
+     * @experimental
+     * @param entries 
+     * @returns 
+     */
     public batch(entries: Array<{type: "put" | "del" | "get", key: string, value: T}>): Promise<unknown> {
         return this.request(this.instanceId, null, "batch", entries);
     }
 
+    /**
+     * Make the request to the target store.
+     * 
+     * @param storeId string ID of cache within store.
+     * @param key     which element in the store to work on
+     * @param action  "get" "put" "del" -- do we delete the key, set the value for the key, or get the value?
+     * @param value   when action is "put", what to store for the specified key. 
+     * @returns       
+     */
     private async request(storeId: string, key: string, action: string, value?: any): Promise<any> {
 
         try {
@@ -204,14 +246,19 @@ export class SessionStoreClient<T = unknown> {
         }
         catch (ex) {
             // Something horrible happened.
+
+            // TODO: throw different error if target server is not listening
+
+
+            
             return {
                 status: 500,
                 message: "Internal Failure.",
                 ex: {
-                    target: ex.config.url,
-                    payload: ex.config.data,
-                    data: ex.response.data,
-                    status: ex.response.status
+                    target: ex.config?.url,
+                    payload: ex.config?.data,
+                    data: ex.response?.data,
+                    status: ex.response?.status
                 }
             }
         }
